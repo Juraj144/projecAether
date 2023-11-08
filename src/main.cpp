@@ -30,6 +30,7 @@ CRGB leds[NUM_LEDS];
 ESP32AnalogRead adc;
 
 int ledState=0;
+int brightness=BRIGHTNESS;
 int oldState;
 bool stateChanged = false;
 bool voltageDone=true;
@@ -90,7 +91,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(BUTTON2_PIN), showBatteryStatus, FALLING);*/
 
 
-  FastLED.setBrightness(100);
+  FastLED.setBrightness(BRIGHTNESS);
 
 }
 
@@ -304,7 +305,7 @@ void btRcv(){
       gCurrentPatternNumber=2;
     }else if(buffer.charAt(0)=='3')
     {
-      for (size_t i = 1; i < 50; i++)
+      for (size_t i = 1; i < buffer.length(); i++)
       {
         inbuffer[i-1]=buffer.charAt(i);
       }
@@ -313,18 +314,21 @@ void btRcv(){
       gCurrentPatternNumber=3;
     }else if(buffer.charAt(0)=='4')
     {
-      for (size_t i = 1; i < 50; i++)
-      {
-        inbuffer[i-1]=buffer.charAt(i);
-      }
-      gama=atof(inbuffer);
-      //gCurrentPatternNumber=4;
+      gCurrentPatternNumber=4;
     }else if(buffer.charAt(0)=='5')
     {
       gCurrentPatternNumber=5;
     }else if(buffer.charAt(0)=='6')
     {
       gCurrentPatternNumber=6;
+    }else if(buffer.charAt(0)=='B')
+    {
+      for (size_t i = 1; i < buffer.length(); i++)
+      {
+        inbuffer[i-1]=buffer.charAt(i);
+      }
+      brightness=atoi(inbuffer);
+      FastLED.setBrightness(brightness);
     }
     
   }
