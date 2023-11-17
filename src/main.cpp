@@ -7,8 +7,9 @@
 
 #define NUM_LEDS 27
 #define DATA_PIN 13
-#define BUTTON1_PIN 4
-#define BUTTON2_PIN 15
+#define BUTTON1_PIN 1
+#define BUTTON2_PIN 3
+#define BUTTON3_PIN 21
 #define ANALOG_CHANNEL 0
 
 #define FRAMES_PER_SECOND  120
@@ -54,8 +55,14 @@ void btRcv();
 void nextPattern();
 void off();
 void yellow();
+void use_pallete();
 void lava();
+void forest();
+void cloud();
+void ocean();
 void rainbow();
+void party();
+void heat();
 void rainbowWithGlitter() ;
 void addGlitter( fract8 chanceOfGlitter);
 void confetti();
@@ -83,6 +90,10 @@ void setup() {
   }
   pinMode(BUTTON1_PIN,INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(BUTTON1_PIN), changeState, FALLING);
+  pinMode(BUTTON2_PIN,INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(BUTTON2_PIN), changeState, FALLING);
+  pinMode(BUTTON3_PIN,INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(BUTTON3_PIN), changeState, FALLING);
   
   
   /*pinMode(BUTTON2_PIN,INPUT_PULLUP);
@@ -97,9 +108,13 @@ void setup() {
 
 
 typedef void (*SimplePatternList[])();
-SimplePatternList gPatterns = { off, yellow, lava, setPickedCollor, rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm };
+SimplePatternList gPatterns = { off, yellow, use_pallete, setPickedCollor, rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm };
+
+typedef void (*PalleteList[])();
+PalleteList palleteFills = { cloud, lava, ocean, forest, rainbow, party, heat};
 
 uint8_t gCurrentPatternNumber = 0; // Index number of which pattern is current
+uint8_t currentpallete = 0; 
 uint8_t gHue = 0; // rotating "base color" used by many of the patterns
 
 void loop() {
@@ -143,7 +158,7 @@ void loop() {
   FastLED.delay(1000/FRAMES_PER_SECOND); 
 
   // do some periodic updates
-  EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
+  EVERY_N_MILLISECONDS( 20 ) { gHue=(gHue+1)%256; } // slowly cycle the "base color" through the rainbow
   EVERY_N_MILLISECONDS( 500 ) { btRcv(); }
   //EVERY_N_SECONDS( 10 ) { nextPattern(); } // change patterns periodically
 
@@ -172,16 +187,39 @@ void yellow()
   fill_solid(leds, NUM_LEDS,CRGB::OrangeRed);
 }
 
-
+void use_pallete(){
+  palleteFills[currentpallete]();
+}
 
 void lava(){
-  fill_palette(leds, NUM_LEDS,0,256/NUM_LEDS,LavaColors_p,255,LINEARBLEND);
+  //fill_palette(leds, NUM_LEDS,0,256/NUM_LEDS,LavaColors_p,255,LINEARBLEND);
+  fill_palette_circular(leds, NUM_LEDS,gHue,LavaColors_p,255,LINEARBLEND,false);
+}
+
+void forest(){
+  fill_palette_circular(leds, NUM_LEDS,gHue,ForestColors_p,255,LINEARBLEND,false);
+}
+
+void cloud(){
+  fill_palette_circular(leds, NUM_LEDS,gHue,CloudColors_p,255,LINEARBLEND,false);
+}
+
+void ocean(){
+  fill_palette_circular(leds, NUM_LEDS,gHue,OceanColors_p,255,LINEARBLEND,false);
 }
 
 void rainbow() 
 {
   // FastLED's built-in rainbow generator
   fill_rainbow( leds, NUM_LEDS, gHue, 7);
+}
+
+void party(){
+  fill_palette_circular(leds, NUM_LEDS,gHue,PartyColors_p,255,LINEARBLEND,false);
+}
+
+void heat(){
+  fill_palette_circular(leds, NUM_LEDS,gHue,HeatColors_p,255,LINEARBLEND,false);
 }
 
 void rainbowWithGlitter() 
@@ -256,34 +294,7 @@ for (size_t i = 0; i < NUM_LEDS; i++)
   FastLED.show();
 }
 
-void ledRandomColor(int interval_ms){
-  for (size_t i = 0; i < NUM_LEDS; i++)
-  {
-    leds[i]=(rand() % 256)*(rand() % 256)*(rand() % 256); 
-  }
-  FastLED.show();
-  delay(interval_ms);
-}
 
-
-void ledLocaclRandomColor(int interval_ms, int spaceSize){
-  for (size_t i = 0; i < NUM_LEDS; i++)
-  {
-    leds[i]=leds[i]+(rand() % (spaceSize))-(rand() % (spaceSize)); 
-    if (leds[i]<=0)
-    {
-      leds[i]=0;
-    }
-  }
-  FastLED.show();
-  delay(interval_ms);
-}
-
-void ledIncrement(int interval_ms, int increnent){
-  
-  FastLED.show();
-  delay(interval_ms);
-}
 
 
 
@@ -302,6 +313,11 @@ void btRcv(){
       gCurrentPatternNumber=1;
     }else if(buffer.charAt(0)=='2')
     {
+      for (size_t i = 1; i < buffer.length(); i++)
+      {
+        inbuffer[i-1]=buffer.charAt(i);
+      }
+      currentpallete=atoi(inbuffer);
       gCurrentPatternNumber=2;
     }else if(buffer.charAt(0)=='3')
     {
